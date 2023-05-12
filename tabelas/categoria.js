@@ -32,14 +32,30 @@ export default class Categoria {
   buscarCategoria(name) {
     const escaped_name = connection.escape(name)
 
-    connection.connect(() => {
-      connection.query({
-        sql: `SELECT * FROM categoria WHERE name = ${escaped_name}`
-      }, (err, result) => {
-        if (err) throw err;
+    return new Promise(res => {
+      connection.connect(() => {
+        connection.query({
+          sql: `SELECT * FROM categoria WHERE name = ${escaped_name}`
+        }, (err, result) => {
+          if (err) throw err
 
-        console.log(result);
-      });
-    });
+          console.log(result)
+          res()
+        })
+      })
+    })
+  }
+
+  listAll() {
+    return new Promise(res => {
+      connection.query({
+        sql: `SELECT * FROM categoria`
+      }, (err, result) => {
+        if (err) throw err
+
+        console.log(result)
+        res(result)
+      })
+    })
   }
 }
