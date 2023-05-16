@@ -1,6 +1,5 @@
-import { config } from "dotenv";
+import util from "node:util"
 import mysql from "mysql";
-config();
 
 const connection = mysql.createConnection({
   host: process.env.MYSQL_ADDON_HOST,
@@ -8,5 +7,7 @@ const connection = mysql.createConnection({
   password: process.env.MYSQL_ADDON_PASSWORD,
   database: process.env.MYSQL_ADDON_DB,
 });
+
+connection.query = util.promisify(connection.query)
 
 export default connection;
