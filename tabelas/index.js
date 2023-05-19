@@ -1,4 +1,4 @@
-import connection from "./config.js"
+import connection from "./connection.js"
 import Categoria from "./categoria.js"
 import Produtos from "./produto.js"
 import Funcionarios from "./funcionario.js"

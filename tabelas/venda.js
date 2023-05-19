@@ -1,4 +1,4 @@
-import connection from "./config.js"
+import connection from "./connection.js"
 
 export default class Vendas {
   static createTable() {
