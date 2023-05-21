@@ -28,12 +28,12 @@ run.connect();
 const legenda = { 0: "desconectar", 1: "inserir item na categoria" };
 
 async function init() {
-  console.log(1)
-  await Categoria.listAll()
-  await Produtos.listAll()
-  console.log(2)
-  run.disconnect();
-  process.exit(0);
+  // console.log(1)
+  // await Categoria.listAll()
+  // await Produtos.listAll()
+  // console.log(2)
+  // run.disconnect();
+  // process.exit(0);
 
   terminal.question(
     `Ola, selecione uma das funções abaixo para continuar \n0: ${legenda[0]}\n1: ${legenda[1]}\n`,

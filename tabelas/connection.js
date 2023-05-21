@@ -9,5 +9,6 @@ const connection = mysql.createConnection({
 });
 
 connection.query = util.promisify(connection.query)
+connection.connect = util.promisify(connection.connect)
 
 export default connection;

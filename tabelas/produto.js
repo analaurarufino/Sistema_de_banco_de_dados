@@ -8,6 +8,7 @@ export default class Produtos {
         UNIQUE KEY (id),
         name VARCHAR(255) NOT NULL,
         cod_produto INT NOT NULL,
+        estoque INT NOT NULL,
         PRIMARY KEY (cod_produto),
         id_categoria INT,
         FOREIGN KEY (id_categoria)
