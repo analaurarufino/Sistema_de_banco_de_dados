@@ -1,35 +1,44 @@
-import connection from "./config.js";
+import connection from "./connection.js";
 
 export default class Categoria {
-  createTable() {
-    connection.connect(function () {
-      var sql =
-        "CREATE TABLE categoria (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))";
-      connection.query(sql, function (err, result) {
-        if (err) throw err;
-        console.log("Table category created");
-      });
-    });
-    return;
+  static createTable() {
+    const sql = `CREATE TABLE Categorias (
+      id_categoria INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255)
+    )`;
+
+    return connection
+      .query({ sql })
+      .then(() => console.log("Table 'Categorias' created"));
   }
-  inserirCategoria(name) {
-    console.log("\nInserindo", name, "na tabela");
-    connection.connect(function () {
-      var sql = `INSERT INTO categoria (name) VALUES ('${name}')`;
-      connection.query(sql, function (err, result) {
-        if (err) throw err;
-        console.log("\n", result);
-      });
-    });
-    return;
+
+  static inserirCategoria(name) {
+    console.log(`Inserindo ${name} na tabela`);
+
+    const escaped_name = connection.escape(name);
+
+    return connection
+      .query({
+        sql: `INSERT INTO Categorias (name) VALUES (${escaped_name})`,
+      })
+      .then(console.log);
   }
-  buscarCategoria(name) {
-    connection.connect(function () {
-      var sql = `INSERT INTO categoria (name) VALUES ('${name}')`;
-      connection.query(sql, function (err, result) {
-        if (err) throw err;
-        console.log(result);
-      });
-    });
+
+  static buscarCategoria(name) {
+    const escaped_name = connection.escape(name);
+
+    return connection
+      .query({
+        sql: `SELECT * FROM Categorias WHERE name = ${escaped_name}`,
+      })
+      .then(console.log);
+  }
+
+  static listAll() {
+    return connection
+      .query({
+        sql: `SELECT * FROM Categorias`,
+      })
+      .then(console.log);
   }
 }
