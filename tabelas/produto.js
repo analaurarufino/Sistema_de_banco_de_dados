@@ -34,23 +34,40 @@ export default class Produtos {
   }
 
   static insert(nome, codigo, categoria, preco, qtdEstoque, feitoEmMari) {
+    if (isNaN(Number(codigo))) {
+      throw new Error("'codigo' must be a number")
+    }
+
+    if (isNaN(Number(preco))) {
+      throw new Error("'preco' must be a number")
+    }
+
+    if (isNaN(Number(qtdEstoque))) {
+      throw new Error("'qtdEstoque' must be a number")
+    }
+
     const nome_sql = connection.escape(nome);
     const categoria_sql = connection.escape(categoria);
-    if (feitoEmMari === "Sim") {
-      feitoEmMari = 1;
-    } else {
-      feitoEmMari = 0;
-    }
+
+    feitoEmMari = /^S.*/i.test(feitoEmMari) ? 1 : 0
+
     return connection.query({
-      sql: `INSERT INTO Produtos (cod_produto, nome_produto, preco, categoria, qtd_estoque, feito_em_Mari) VALUES (${codigo}, ${nome_sql}, ${preco}, ${categoria_sql}, ${qtdEstoque}, ${feitoEmMari})`,
-    });
+      sql: `INSERT INTO Produtos
+      (cod_produto, nome_produto, preco, categoria, qtd_estoque, feito_em_Mari)
+      VALUES
+      (${codigo}, ${nome_sql}, ${preco}, ${categoria_sql}, ${qtdEstoque}, ${feitoEmMari})`,
+    })
   }
 
   static remove(codigo) {
-    const escaped_cod = connection.escape(codigo);
+    const cod_produto = Number(codigo)
+
+    if (isNaN(cod_produto)) {
+      throw new Error(`'codigo' must be a number.`)
+    }
 
     return connection.query({
-      sql: `DELETE FROM Produtos WHERE cod_produto = ${escaped_cod}`,
+      sql: `DELETE FROM Produtos WHERE cod_produto = ${cod_produto}`,
     });
   }
 }
