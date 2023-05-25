@@ -193,8 +193,8 @@ export default class Produtos {
       throw new Error(status)
 
     const to_update = Object.assign({}, {
-      nome_produto: connection.escape(nome_produto),
-      categoria: connection.escape(categoria),
+      nome_produto: nome_produto ? connection.escape(nome_produto) : undefined,
+      categoria: categoria ? connection.escape(categoria) : undefined,
       preco,
       qtd_estoque,
       feito_em_Mari
@@ -245,7 +245,7 @@ export default class Produtos {
 
   static productMadeInMari() {
     return connection.query({
-      sql: `SELECT nome_produto
+      sql: `SELECT *
       FROM Produtos
       WHERE feito_em_Mari = 1`,
     })

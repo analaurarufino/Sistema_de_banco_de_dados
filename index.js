@@ -81,7 +81,10 @@ class Crud {
     try {
       const resultado = await Produtos.search(prod_name)
 
-      console.table([resultado["0"]])
+      if (resultado.length == 0)
+        console.log("Nenhum produto foi encontrado.")
+      else
+        console.table(resultado)
     } catch (e) {
       console.error("[Erro] Pesquisar", e)
     }
@@ -164,10 +167,10 @@ class Crud {
       feito_em_Mari
     }
 
-    console.table([to_insert])
-
     try {
       await Produtos.insert(to_insert)
+
+      console.table([to_insert])
 
       console.log("inserido.")
     } catch (e) {
@@ -190,9 +193,9 @@ class Crud {
       const result = await Produtos.remove(codigo_produto)
 
       if (result.affectedRows === 1)
-        console.log("Produto removido")
+        console.log("Produto removido.")
       else
-        console.log("Produto nao encontrado")
+        console.log("Produto nao encontrado.")
     } catch (e) {
       console.error("[Erro] Remover", e)
     }
@@ -212,7 +215,7 @@ class Crud {
         const resp = await Produtos.get(cod_produto)
 
         if (!resp.length)
-          return res("nao ha nenhum produto com esse codigo")
+          return res("Nao ha nenhum produto com esse codigo.")
 
         return res(true)
       })
@@ -257,6 +260,7 @@ class Crud {
         type: "list",
         choices: this.categorias,
         when: a => a.decision,
+        loop: false,
       }
     ])
       .then(answers => answers.categoria)
