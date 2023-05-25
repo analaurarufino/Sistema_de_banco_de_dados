@@ -234,4 +234,20 @@ export default class Produtos {
       sql: `SELECT * FROM Produtos WHERE cod_produto = ${cod_produto}`
     })
   }
+
+  static groupByCategory() {
+    return connection.query({
+      sql: `SELECT categoria, COUNT(*) AS qtd_produtos
+      FROM Produtos
+      GROUP BY categoria`,
+    })
+  }
+
+  static productMadeInMari() {
+    return connection.query({
+      sql: `SELECT nome_produto
+      FROM Produtos
+      WHERE feito_em_Mari = 1`,
+    })
+  }
 }

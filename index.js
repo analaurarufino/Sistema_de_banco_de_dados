@@ -44,6 +44,8 @@ class Crud {
       DELETE: 4,
       ALTER: 5,
       SHOW_ONE: 6,
+      GROUP_CATEGORY: 7,
+      GROUP_MARI: 8,
     }
   }
 
@@ -340,6 +342,26 @@ class Crud {
     }
   }
 
+  async show_product_group_category() {
+    try {
+      const results = await Produtos.groupByCategory()
+
+      console.table(results)
+    } catch (e) {
+      console.error("[Erro] Exibir por categoria")
+    }
+  }
+
+  async show_product_group_mari() {
+    try {
+      const results = await Produtos.productMadeInMari()
+
+      console.table(results)
+    } catch (e) {
+      console.error("[Erro] Exibir feitos em Mari")
+    }
+  }
+
   async ask() {
     const choice = await inquirer.prompt([{
       type: "list",
@@ -353,7 +375,10 @@ class Crud {
         { name: "Remover produto", value: this.constants.DELETE },
         { name: "Alterar produto", value: this.constants.ALTER },
         { name: "Exibir um produto", value: this.constants.SHOW_ONE },
-      ]
+        { name: "Exibir produtos por categoria", value: this.constants.GROUP_CATEGORY },
+        { name: "Exibir produtos feitos em Mari", value: this.constants.GROUP_MARI },
+      ],
+      loop: false,
     }])
       .then(answers => answers.choice)
 
@@ -378,6 +403,12 @@ class Crud {
       break
     case this.constants.SHOW_ONE:
       await this.show_product()
+      break
+    case this.constants.GROUP_CATEGORY:
+      await this.show_product_group_category()
+      break
+    case this.constants.GROUP_MARI:
+      await this.show_product_group_mari()
       break
     }
 
