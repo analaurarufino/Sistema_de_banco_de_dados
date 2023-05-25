@@ -157,7 +157,7 @@ export default class Produtos {
 
   static showOne() {
     return connection.query({
-      sql: "SELECT * FROM Produtos LIMIT 1",
+      sql: "SELECT * FROM Produtos ORDER BY RAND() LIMIT 1",
     });
   }
 
@@ -193,8 +193,8 @@ export default class Produtos {
       throw new Error(status)
 
     const to_update = Object.assign({}, {
-      nome_produto,
-      categoria,
+      nome_produto: connection.escape(nome_produto),
+      categoria: connection.escape(categoria),
       preco,
       qtd_estoque,
       feito_em_Mari
