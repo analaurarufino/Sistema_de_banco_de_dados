@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.0.3",
+    "inquirer": "^9.2.6",
     "mysql": "github:mysqljs/mysql"
   }
 }
