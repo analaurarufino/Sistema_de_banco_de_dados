@@ -1,10 +1,7 @@
 import "dotenv/config";
-import inquirer from "inquirer";
+import readline from "node:readline/promises";
 
-import {
-  connection,
-  Produtos,
-} from "./tabelas/index.js"
+import { connection, Produtos } from "./tabelas/index.js";
 
 class Crud {
   constructor (connection) {
