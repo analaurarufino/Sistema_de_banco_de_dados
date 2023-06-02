@@ -1,4 +1,4 @@
-import connection from "./connection.js"
+import connection from "./connection.js";
 
 export default class Funcionarios {
   static createTable() {
@@ -9,27 +9,29 @@ export default class Funcionarios {
       data_nasc VARCHAR(255) NOT NULL,
       cpf VARCHAR(255) NOT NULL UNIQUE,
       cargo VARCHAR(255) NOT NULL,
-      tempo_trab INT NOT NULL,
-      id_cadastro INT NOT NULL PRIMARY KEY
-    )`
+      tempo_trab INT NOT NULL
+    )`;
 
-    return connection.query({ sql })
-      .then(() => console.log(`Created table 'Funcionario'.`))
+    return connection
+      .query({ sql })
+      .then(() => console.log(`Created table 'Funcionario'.`));
   }
 
   static search(cpf) {
-    const escaped_cpf = connection.escape(cpf)
+    const escaped_cpf = connection.escape(cpf);
 
-    return connection.query({
-      sql: `SELECT * FROM Funcionarios WHERE cpf = ${escaped_cpf}`
-    })
-      .then(console.log)
+    return connection
+      .query({
+        sql: `SELECT * FROM Funcionarios WHERE cpf = ${escaped_cpf}`,
+      })
+      .then(console.log);
   }
 
   static listAll() {
-    return connection.query({
-      sql: `SELECT * FROM Funcionarios`
-    })
-      .then(console.log)
+    return connection
+      .query({
+        sql: `SELECT * FROM Funcionarios`,
+      })
+      .then(console.log);
   }
 }
