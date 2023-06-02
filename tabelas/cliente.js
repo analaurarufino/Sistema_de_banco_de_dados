@@ -23,7 +23,7 @@ const validate_fan_de_onepiece = (fan_de_onepiece) => {
 
   if (fan_de_onepiece === null) return "fan_de_onepiece nao pode ser NULL";
 
-  if (fan_de_onepiece !== 0 && fan_onepiece !== 1)
+  if (fan_de_onepiece !== 0 && fan_de_onepiece !== 1)
     return "fan_de_onepiece precisa ser ou 0 ou 1";
 
   return true;
@@ -34,8 +34,7 @@ const validate_de_souza = (de_souza) => {
 
   if (de_souza === null) return "de_souza nao pode ser NULL";
 
-  if (de_souza !== 0 && fan_onepiece !== 1)
-    return "de_souza precisa ser ou 0 ou 1";
+  if (de_souza !== 0 && de_souza !== 1) return "de_souza precisa ser ou 0 ou 1";
 
   return true;
 };
@@ -45,7 +44,7 @@ const validate_is_flamengo = (is_flamengo) => {
 
   if (is_flamengo === null) return "is_flamengo nao pode ser NULL";
 
-  if (is_flamengo !== 0 && fan_onepiece !== 1)
+  if (is_flamengo !== 0 && is_flamengo !== 1)
     return "is_flamengo precisa ser ou 0 ou 1";
 
   return true;
@@ -61,7 +60,7 @@ export default class Clientes {
           nome_cliente VARCHAR(255) NOT NULL,
           fan_de_onepiece BOOL NOT NULL DEFAULT 0,
           de_souza BOOL NOT NULL DEFAULT 0,
-          is_flamengo BOOL NOT NULL DEFAULT 0,
+          is_flamengo BOOL NOT NULL DEFAULT 0
         );`,
       })
       .then(() => console.log(`table 'Clientes' created.`));
@@ -123,7 +122,7 @@ export default class Clientes {
     });
   }
 
-  static alter({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo }) {
+  static alter({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo }, id) {
     const status = Clientes.validate({
       nome_cliente,
       fan_de_onepiece,
@@ -153,27 +152,27 @@ export default class Clientes {
     if (!str.length) return;
 
     connection.query({
-      sql: `UPDATE Clientes SET ${str} WHERE cod_produto = ${cod_produto}`,
+      sql: `UPDATE Clientes SET ${str} WHERE id = ${id}`,
     });
   }
 
-  static remove(cod_produto) {
-    const status = Clientes.validate({ cod_produto });
+  static remove(id) {
+    const status = Clientes.validate({ id });
 
     if (status !== true) throw new Error(status);
 
     return connection.query({
-      sql: `DELETE FROM Clientes WHERE cod_produto = ${cod_produto}`,
+      sql: `DELETE FROM Clientes WHERE id = ${id}`,
     });
   }
 
-  static get(cod_produto) {
-    const status = Clientes.validate({ cod_produto });
+  static get(id) {
+    const status = Clientes.validate({ id });
 
     if (status !== true) throw new Error(status);
 
     return connection.query({
-      sql: `SELECT * FROM Clientes WHERE cod_produto = ${cod_produto}`,
+      sql: `SELECT * FROM Clientes WHERE id = ${id}`,
     });
   }
 
