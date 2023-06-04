@@ -1,12 +1,20 @@
 import "dotenv/config";
 import inquirer from "inquirer";
 
-import { connection, Funcionarios, Produtos } from "./tabelas/index.js";
+import {
+  connection,
+  Funcionarios,
+  Produtos,
+  ProdutoVendas,
+  Vendas,
+} from "./tabelas/index.js";
 import Clientes from "./tabelas/cliente.js";
 
 class Crud {
   constructor(connection) {
     this.connection = connection;
+
+    this.carrinho = [];
 
     this.categorias = [
       { name: "Frutas", value: "frutas" },
@@ -34,21 +42,29 @@ class Crud {
       { name: "Produtos de Beleza", value: "produtos_de_beleza" },
     ];
 
+    this.sell = [
+      { name: "Adicionar produto", value: "add" },
+      { name: "Ver carrinho", value: "card" },
+      { name: "Sair", value: "sair" },
+    ];
+
     this.constants = {
       DISCONNECT: 0,
       LIST_ALL: 1,
-      SEARCH_NAME: 2,
-      INSERT: 3,
-      DELETE: 4,
-      ALTER: 5,
-      SHOW_ONE: 6,
-      GROUP_CATEGORY: 7,
-      GROUP_MARI: 8,
-      CREATE_TABLE_FUNC: 9,
-      INSERT_CLIENT: 10,
-      ALTER_CLIENT: 11,
-      LIST_ALL_CLIENTS: 12,
-      DELETE_CLIENT: 13,
+      LOGIN: 2,
+      ADMIN: 3,
+      // SEARCH_NAME: 2,
+      // INSERT: 3,
+      // DELETE: 4,
+      // ALTER: 5,
+      // SHOW_ONE: 6,
+      // GROUP_CATEGORY: 7,
+      // GROUP_MARI: 8,
+      // CREATE_TABLE_PRODUTOVENDA: 9,
+      // INSERT_CLIENT: 10,
+      // ALTER_CLIENT: 11,
+      // LIST_ALL_CLIENTS: 12,
+      // DELETE_CLIENT: 13,
     };
   }
 
@@ -63,10 +79,74 @@ class Crud {
   async list_all_products() {
     try {
       const result = await Produtos.listAll();
-
       console.table(result);
+      const res = await inquirer
+        .prompt({
+          name: "sell",
+          message: "Selecione uma opção",
+          type: "list",
+          choices: this.sell,
+          loop: true,
+        })
+        .then((answer) => answer.sell);
+
+      switch (res) {
+        case "sair":
+          return 0;
+
+        case "add": {
+          const prod_cod = await inquirer
+            .prompt({
+              name: "cod_produto",
+              message: "Digite o código do produto desejado:",
+              type: "number",
+              validate: (cod_produto) =>
+                new Promise(async (res) => {
+                  const status = Produtos.validate({ cod_produto });
+
+                  if (status !== true) return res(status);
+
+                  const resp = await Produtos.get(cod_produto);
+
+                  if (!resp.length)
+                    return res("Nao ha nenhum produto com esse codigo.");
+
+                  return res(true);
+                }),
+            })
+            .then((answer) => answer.cod_produto);
+
+          const quantidade = await inquirer
+            .prompt({
+              name: "qtd_estoque",
+              message: "Digite a quantitade:",
+              type: "number",
+              validate: (qtd_estoque) => {
+                return Produtos.validate({ qtd_estoque });
+              },
+            })
+            .then((answer) => answer.qtd_estoque);
+
+          const resp = await Produtos.get(prod_cod);
+          const dados = Object.values(resp[0]);
+
+          this.carrinho.push({
+            produto: dados[2],
+            quantidade,
+            valor: dados[3],
+          });
+
+          console.log("Produto adicionado");
+          return 1;
+        }
+
+        case "card":
+          console.log(this.carrinho);
+          return 1;
+      }
     } catch (e) {
       console.error("[Erro] Listar", e);
+      return 1;
     }
   }
 
@@ -400,6 +480,26 @@ class Crud {
     }
   }
 
+  async create_table_venda() {
+    try {
+      const result = await Vendas.createTable();
+
+      console.log(result);
+    } catch (e) {
+      console.error("[Erro] create", e);
+    }
+  }
+
+  async create_table_produto_venda() {
+    try {
+      const result = await ProdutoVendas.createTable();
+
+      console.log(result);
+    } catch (e) {
+      console.error("[Erro] create", e);
+    }
+  }
+
   async insert_client() {
     const nome_cliente = await inquirer
       .prompt({
@@ -610,46 +710,50 @@ class Crud {
         {
           type: "list",
           name: "choice",
-          message: "Selecione uma das funções abaixo para continuar:",
+          message:
+            "Olá! Bem-vindo(a)! Por favor, selecione uma das funções abaixo para continuar:",
           choices: [
-            { name: "Desconectar", value: this.constants.DISCONNECT },
-            { name: "Listar todos produtos", value: this.constants.LIST_ALL },
+            { name: "Sair", value: this.constants.DISCONNECT },
+            { name: "Nossos Produtos", value: this.constants.LIST_ALL },
             {
-              name: "Pesquisar produto por nome",
-              value: this.constants.SEARCH_NAME,
-            },
-            { name: "Inserir produto", value: this.constants.INSERT },
-            { name: "Remover produto", value: this.constants.DELETE },
-            { name: "Alterar produto", value: this.constants.ALTER },
-            { name: "Exibir um produto", value: this.constants.SHOW_ONE },
-            {
-              name: "Exibir produtos por categoria",
-              value: this.constants.GROUP_CATEGORY,
+              name: "Fazer login",
+              value: this.constants.LOGIN,
             },
             {
-              name: "Exibir produtos feitos em Mari",
-              value: this.constants.GROUP_MARI,
+              name: "Sou funcionário, Acesso Admin",
+              value: this.constants.ADMIN,
             },
-            {
-              name: "Criar tabela Funcionarios",
-              value: this.constants.CREATE_TABLE_FUNC,
-            },
-            {
-              name: "Listar clientes",
-              value: this.constants.LIST_ALL_CLIENTS,
-            },
-            {
-              name: "Criar cliente",
-              value: this.constants.INSERT_CLIENT,
-            },
-            {
-              name: "Alterar cliente",
-              value: this.constants.ALTER_CLIENT,
-            },
-            {
-              name: "Remover cliente",
-              value: this.constants.DELETE_CLIENT,
-            },
+            // { name: "Remover produto", value: this.constants.DELETE },
+            // { name: "Alterar produto", value: this.constants.ALTER },
+            // { name: "Exibir um produto", value: this.constants.SHOW_ONE },
+            // {
+            //   name: "Exibir produtos por categoria",
+            //   value: this.constants.GROUP_CATEGORY,
+            // },
+            // {
+            //   name: "Exibir produtos feitos em Mari",
+            //   value: this.constants.GROUP_MARI,
+            // },
+            // {
+            //   name: "Criar tabela ProdutoVendas",
+            //   value: this.constants.CREATE_TABLE_PRODUTOVENDA,
+            // },
+            // {
+            //   name: "Listar clientes",
+            //   value: this.constants.LIST_ALL_CLIENTS,
+            // },
+            // {
+            //   name: "Criar cliente",
+            //   value: this.constants.INSERT_CLIENT,
+            // },
+            // {
+            //   name: "Alterar cliente",
+            //   value: this.constants.ALTER_CLIENT,
+            // },
+            // {
+            //   name: "Remover cliente",
+            //   value: this.constants.DELETE_CLIENT,
+            // },
           ],
           loop: false,
         },
@@ -660,43 +764,49 @@ class Crud {
 
     switch (choice) {
       case this.constants.LIST_ALL:
-        await this.list_all_products();
+        while (await this.list_all_products());
         break;
-      case this.constants.SEARCH_NAME:
-        await this.search_product_name();
+      case this.constants.LOGIN:
+        await this.login();
         break;
-      case this.constants.INSERT:
-        await this.insert_product();
+      case this.constants.ADMIN:
+        await this.admin();
         break;
-      case this.constants.DELETE:
-        await this.delete_product();
-        break;
-      case this.constants.ALTER:
-        await this.alter_product();
-        break;
-      case this.constants.SHOW_ONE:
-        await this.show_product();
-        break;
-      case this.constants.GROUP_CATEGORY:
-        await this.show_product_group_category();
-        break;
-      case this.constants.GROUP_MARI:
-        await this.show_product_group_mari();
-      case this.constants.CREATE_TABLE_FUNC:
-        await this.create_table_func();
-        break;
-      case this.constants.LIST_ALL_CLIENTS:
-        await this.list_all_clients();
-        break;
-      case this.constants.INSERT_CLIENT:
-        await this.insert_client();
-        break;
-      case this.constants.ALTER_CLIENT:
-        await this.alter_client();
-        break;
-      case this.constants.DELETE_CLIENT:
-        await this.delete_client();
-        break;
+      // case this.constants.SEARCH_NAME:
+      //   await this.search_product_name();
+      //   break;
+      // case this.constants.INSERT:
+      //   await this.insert_product();
+      //   break;
+      // case this.constants.DELETE:
+      //   await this.delete_product();
+      //   break;
+      // case this.constants.ALTER:
+      //   await this.alter_product();
+      //   break;
+      // case this.constants.SHOW_ONE:
+      //   await this.show_product();
+      //   break;
+      // case this.constants.GROUP_CATEGORY:
+      //   await this.show_product_group_category();
+      //   break;
+      // case this.constants.GROUP_MARI:
+      //   await this.show_product_group_mari();
+      // case this.constants.CREATE_TABLE_PRODUTOVENDA:
+      //   await this.create_table_produto_venda();
+      //   break;
+      // case this.constants.LIST_ALL_CLIENTS:
+      //   await this.list_all_clients();
+      //   break;
+      // case this.constants.INSERT_CLIENT:
+      //   await this.insert_client();
+      //   break;
+      // case this.constants.ALTER_CLIENT:
+      //   await this.alter_client();
+      //   break;
+      // case this.constants.DELETE_CLIENT:
+      //   await this.delete_client();
+      //   break;
     }
 
     return 1;
