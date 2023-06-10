@@ -27,11 +27,19 @@ export default class Funcionarios {
       .then(console.log);
   }
 
-  static listAll() {
+  static searchByID(id) {
+    const escaped_id = connection.escape(id);
+
     return connection
       .query({
-        sql: `SELECT * FROM Funcionarios`,
+        sql: `SELECT * FROM Funcionarios WHERE funcionario_id = ${escaped_id}`,
       })
       .then(console.log);
+  }
+
+  static listAll() {
+    return connection.query({
+      sql: `SELECT * FROM Funcionarios`,
+    });
   }
 }
