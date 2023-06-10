@@ -1,3 +1,4 @@
+import { escape } from "mysql";
 import connection from "./connection.js";
 
 const isString = (s) => typeof s === "string" || s instanceof String;
@@ -58,6 +59,7 @@ export default class Clientes {
           id INT AUTO_INCREMENT NOT NULL,
           UNIQUE KEY (id),
           nome_cliente VARCHAR(255) NOT NULL,
+          UNIQUE KEY (nome_cliente),
           fan_de_onepiece BOOL NOT NULL DEFAULT 0,
           de_souza BOOL NOT NULL DEFAULT 0,
           is_flamengo BOOL NOT NULL DEFAULT 0
@@ -79,6 +81,12 @@ export default class Clientes {
     const status_flamengo = validate_is_flamengo(is_flamengo);
     if (status_flamengo !== true) return status_flamengo;
 
+    const findClient = this.search(nome_cliente);
+    if (findClient.length > 0) {
+      console.log("Cliente existente");
+      return false;
+    }
+
     return true;
   }
 
@@ -87,6 +95,14 @@ export default class Clientes {
 
     return connection.query({
       sql: `SELECT * FROM Clientes WHERE nome_cliente = ${escaped_name} LIMIT 1`,
+    });
+  }
+
+  static getById(id) {
+    const escaped_id = connection.escape(id);
+
+    return connection.query({
+      sql: `SELECT * FROM Clientes WHERE id = ${escaped_id} LIMIT 1`,
     });
   }
 

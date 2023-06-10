@@ -32,4 +32,17 @@ export default class ProdutoVendas {
       })
       .then(console.log);
   }
+
+  static insert({ cod_produto, venda_id, quantidade }) {
+    const escaped_cod_produto = connection.escape(cod_produto);
+    const escaped_venda_id = connection.escape(venda_id);
+    const escaped_quantidade = connection.escape(quantidade);
+
+    return connection.query({
+      sql: `INSERT INTO ProdutoVendas
+      (cod_produto, venda_id, quantidade)
+      VALUES
+      (${escaped_cod_produto}, ${escaped_venda_id}, ${escaped_quantidade})`,
+    });
+  }
 }

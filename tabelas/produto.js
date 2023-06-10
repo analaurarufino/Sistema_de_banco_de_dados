@@ -142,6 +142,12 @@ export default class Produtos {
     });
   }
 
+  static listAllActive() {
+    return connection.query({
+      sql: "SELECT * FROM Produtos WHERE qtd_estoque > 0",
+    });
+  }
+
   static showOne() {
     return connection.query({
       sql: "SELECT * FROM Produtos ORDER BY RAND() LIMIT 1",
