@@ -21,6 +21,41 @@ class Crud {
 
     this.client = false;
 
+    this.menuAdmin = {
+      Exit: 0,
+      REPORTS: 1,
+      SHOW: 2,
+      INSERT: 3,
+      DELETE: 4,
+      ALTER: 5,
+      LESSTHAN5: 6,
+    };
+
+    this.listMenuAdmin = [
+      { name: "Relatórios", value: this.menuAdmin.REPORTS },
+      {
+        name: "Filtrar Produtos com menos de 5 produtos",
+        value: this.menuAdmin.LESSTHAN5,
+      },
+      { name: "Lista Produtos", value: this.menuAdmin.SHOW },
+      { name: "Criar Produtos", value: this.menuAdmin.INSERT },
+      { name: "Editar Produtos", value: this.menuAdmin.ALTER },
+      { name: "Remover Produtos", value: this.menuAdmin.DELETE },
+      { name: "Sair", value: 0 },
+    ];
+
+    this.listReports = [
+      { name: "Produtos feitos em Mari", value: 0 },
+      {
+        name: "Clientes Flamenguistas",
+        value: 1,
+      },
+      {
+        name: "Sair",
+        value: 2,
+      },
+    ];
+
     this.categorias = [
       { name: "Frutas", value: "frutas" },
       { name: "Legumes", value: "legumes" },
@@ -66,8 +101,8 @@ class Crud {
     ];
 
     this.leaveServer = [
-      { name: "Sair", value: 0 },
       { name: "Realizar uma nova compra", value: 1 },
+      { name: "Sair", value: 0 },
     ];
 
     this.constants = {
@@ -84,6 +119,95 @@ class Crud {
 
   async disconnect() {
     return this.connection.end();
+  }
+
+  async reports() {
+    const res = await inquirer
+      .prompt({
+        name: "res",
+        message: "Selecione um opção:",
+        type: "list",
+        choices: this.listReports,
+        loop: true,
+      })
+      .then((answer) => answer.res);
+    if (res == 0) {
+      try {
+        const resp = await Produtos.productMadeInMari();
+        console.table(resp);
+      } catch (e) {
+        console.error("[Erro] Exibir Produtos", e);
+      }
+    } else {
+      try {
+        const resp = await Clientes.ClientesFlamenguistas();
+        console.table(resp);
+      } catch (e) {
+        console.error("[Erro] Exibir Clientes", e);
+      }
+    }
+  }
+
+  async showLessThan() {
+    try {
+      const resp = await Produtos.LessThanFive();
+      console.table(resp);
+    } catch (e) {
+      console.error("[Erro] Exibir Produtos", e);
+    }
+  }
+
+  async admin() {
+    if (!this.is_authenticated)
+      await inquirer
+        .prompt({
+          name: "cpf",
+          message: "Digite o seu cpf:",
+          type: "input",
+          validate: (cpf) =>
+            new Promise(async (res) => {
+              const resp = await Funcionarios.search(cpf);
+
+              if (resp.length === 0) return res("Funcionario não existe");
+
+              return res(true);
+            }),
+        })
+        .then((answer) => answer.cpf);
+    this.is_authenticated = true;
+
+    const res = await inquirer
+      .prompt({
+        name: "sell",
+        message: "Selecione uma opção",
+        type: "list",
+        choices: this.listMenuAdmin,
+        loop: true,
+      })
+      .then((answer) => answer.sell);
+
+    switch (res) {
+      case this.menuAdmin.INSERT:
+        await this.insert_product();
+        break;
+      case this.menuAdmin.DELETE:
+        await this.delete_product();
+        break;
+      case this.menuAdmin.ALTER:
+        await this.alter_product();
+      case this.menuAdmin.SHOW:
+        await this.show_product();
+        break;
+      case this.menuAdmin.REPORTS:
+        while (await this.reports());
+        break;
+      case this.menuAdmin.LESSTHAN5:
+        await this.showLessThan();
+        break;
+      case this.menuAdmin.Exit:
+        return 0;
+    }
+    return 1;
   }
 
   async list_all_products() {
@@ -131,9 +255,20 @@ class Crud {
               name: "qtd_estoque",
               message: "Digite a quantitade:",
               type: "number",
-              validate: (qtd_estoque) => {
-                return Produtos.validate({ qtd_estoque });
-              },
+              validate: (qtd_estoque) =>
+                new Promise(async (res) => {
+                  const status = Produtos.validate({ qtd_estoque });
+
+                  if (status !== true) return res(status);
+
+                  const produto = await Produtos.get(prod_cod);
+                  const qtd = Object.values(produto[0])[5];
+                  console.log();
+                  if (qtd_estoque > qtd)
+                    return res("Quantia excede a quantidade no estoque");
+
+                  return res(true);
+                }),
             })
             .then((answer) => answer.qtd_estoque);
 
@@ -145,6 +280,7 @@ class Crud {
             produto: dados[2],
             quantidade,
             valor: dados[3],
+            qtd_estoque: dados[5],
           });
 
           console.log("Produto adicionado ao carrinho com sucesso\n");
@@ -185,7 +321,7 @@ class Crud {
   async summary() {
     console.log("\nProdutos:");
     console.table(this.carrinho);
-    const total = Object.values(this.carrinho).reduce(
+    let total = Object.values(this.carrinho).reduce(
       (prev, curr) => prev + curr.valor * curr.quantidade,
       0
     );
@@ -269,6 +405,23 @@ class Crud {
             loop: true,
           })
           .then((answer) => answer.forma_pagamento);
+        const cli = await Clientes.getById(this.client);
+        const clientData = Object.values(cli[0]);
+        let desconto = 0;
+        if (clientData[2] == 1) {
+          desconto = desconto + 0.1;
+        }
+        if (clientData[3]) {
+          desconto = desconto + 0.1;
+        }
+        if (clientData[4]) {
+          desconto = desconto + 0.1;
+        }
+
+        if (desconto > 0) {
+          total = total - total * desconto;
+        }
+
         const sale = {
           date_venda: new Date().toLocaleString().slice(0, 10),
           valor_total: total,
@@ -277,10 +430,18 @@ class Crud {
           cliente_id: this.client,
           funcionario_id,
         };
+
         const compra = await Vendas.createSale(sale);
+        console.table(sale);
         const venda_id = Object.values(compra)[2];
 
         for (let index = 0; index < this.carrinho.length; index++) {
+          await Produtos.alter({
+            cod_produto: this.carrinho[index].cod_produto,
+            qtd_estoque:
+              this.carrinho[index].qtd_estoque -
+              this.carrinho[index].quantidade,
+          });
           await ProdutoVendas.insert({
             cod_produto: this.carrinho[index].cod_produto,
             quantidade: this.carrinho[index].quantidade,
@@ -366,6 +527,274 @@ class Crud {
     }
   }
 
+  async show_product() {
+    try {
+      const resp = await Produtos.listAll();
+
+      console.table(resp);
+    } catch (e) {
+      console.error("[Erro] Exibir produto", e);
+    }
+  }
+
+  async insert_product() {
+    const nome_produto = await inquirer
+      .prompt({
+        name: "nome_produto",
+        message: "Digite o nome do seu produto:",
+        type: "input",
+        validate: (nome_produto) => {
+          return Produtos.validate({ nome_produto });
+        },
+      })
+      .then((answer) => answer.nome_produto);
+
+    const cod_produto = await inquirer
+      .prompt({
+        name: "cod_produto",
+        message: "Digite o codigo do seu produto:",
+        type: "number",
+        validate: (cod_produto) =>
+          new Promise(async (res) => {
+            const status_cod = Produtos.validate({ cod_produto });
+
+            if (status_cod !== true) return res(status_cod);
+
+            const resp = await Produtos.get(cod_produto);
+
+            if (resp.length)
+              return res("Esse codigo de produto ja esta sendo usado");
+
+            return res(true);
+          }),
+      })
+      .then((answer) => answer.cod_produto);
+
+    const categoria = await inquirer
+      .prompt({
+        name: "categoria",
+        message: "Digite a categoria do seu produto:",
+        type: "list",
+        choices: this.categorias,
+        loop: false,
+      })
+      .then((answer) => answer.categoria);
+
+    const preco = await inquirer
+      .prompt({
+        name: "preco",
+        message: "Digite o preço do seu produto:",
+        type: "number",
+        validate: (preco) => {
+          return Produtos.validate({ preco });
+        },
+      })
+      .then((answer) => answer.preco);
+
+    const qtd_estoque = await inquirer
+      .prompt({
+        name: "qtd_estoque",
+        message: "Digite a quantitade presente no estoque:",
+        type: "number",
+        validate: (qtd_estoque) => {
+          return Produtos.validate({ qtd_estoque });
+        },
+      })
+      .then((answer) => answer.qtd_estoque);
+
+    const feito_em_Mari = await inquirer
+      .prompt({
+        name: "feito_em_Mari",
+        message: "Foi feito em Mari?",
+        type: "confirm",
+      })
+      // convert bool to int
+      .then((answer) => ~~answer.feito_em_Mari);
+
+    let to_insert = {
+      nome_produto,
+      cod_produto,
+      categoria,
+      preco,
+      qtd_estoque,
+      feito_em_Mari,
+    };
+
+    try {
+      await Produtos.insert(to_insert);
+
+      console.table([to_insert]);
+
+      console.log("inserido.");
+    } catch (e) {
+      console.error("[Erro] Inserir", e);
+    }
+  }
+
+  async delete_product() {
+    const codigo_produto = await inquirer
+      .prompt({
+        name: "codigo_produto",
+        message: "Digite o código do produto a ser removido:",
+        type: "number",
+        validate: (codigo_produto) => {
+          return Produtos.validate({ codigo_produto });
+        },
+      })
+      .then((answer) => answer.codigo_produto);
+
+    try {
+      const result = await Produtos.remove(codigo_produto);
+
+      if (result.affectedRows === 1) console.log("Produto removido.");
+      else console.log("Produto nao encontrado.");
+    } catch (e) {
+      console.error("[Erro] Remover", e);
+    }
+  }
+
+  async alter_product() {
+    const cod_produto = await inquirer
+      .prompt({
+        name: "cod_produto",
+        message: "Digite o codigo do produto que você quer alterar:",
+        type: "number",
+        validate: (cod_produto) =>
+          new Promise(async (res) => {
+            const status = Produtos.validate({ cod_produto });
+
+            if (status !== true) return res(status);
+
+            const resp = await Produtos.get(cod_produto);
+
+            if (!resp.length)
+              return res("Nao ha nenhum produto com esse codigo.");
+
+            return res(true);
+          }),
+      })
+      .then((answer) => answer.cod_produto);
+
+    const resp = await Produtos.get(cod_produto);
+    console.table(resp);
+
+    const to_alter = {};
+
+    const nome_produto = await inquirer
+      .prompt([
+        {
+          name: "decision",
+          message: "Deseja alterar o nome do produto?",
+          type: "confirm",
+        },
+        {
+          name: "nome_produto",
+          message: "Insira o novo nome do produto:",
+          type: "input",
+          when: (a) => {
+            return a.decision;
+          },
+          validate: (nome_produto) => {
+            return Produtos.validate({ nome_produto });
+          },
+        },
+      ])
+      .then((answers) => answers.nome_produto);
+
+    to_alter.nome_produto = nome_produto;
+
+    const categoria = await inquirer
+      .prompt([
+        {
+          name: "decision",
+          message: "Deseja alterar a categoria do produto?",
+          type: "confirm",
+        },
+        {
+          name: "categoria",
+          message: "Escolha a nova categoria do produto:",
+          type: "list",
+          choices: this.categorias,
+          when: (a) => a.decision,
+          loop: false,
+        },
+      ])
+      .then((answers) => answers.categoria);
+
+    to_alter.categoria = categoria;
+
+    const preco = await inquirer
+      .prompt([
+        {
+          name: "decision",
+          message: "Deseja alterar o preco do produto?",
+          type: "confirm",
+        },
+        {
+          name: "preco",
+          message: "Insira o novo preco do produto:",
+          type: "number",
+          when: (a) => a.decision,
+          validate: (preco) => {
+            return Produtos.validate({ preco });
+          },
+        },
+      ])
+      .then((answers) => answers.preco);
+
+    to_alter.preco = preco;
+
+    const qtd_estoque = await inquirer
+      .prompt([
+        {
+          name: "decision",
+          message: "Deseja alterar a quantidade em estoque?",
+          type: "confirm",
+        },
+        {
+          name: "qtd_estoque",
+          message: "Insira a nova quantidade em estoque:",
+          type: "number",
+          when: (a) => a.decision,
+          validate: (qtd_estoque) => {
+            return Produtos.validate({ qtd_estoque });
+          },
+        },
+      ])
+      .then((answers) => answers.qtd_estoque);
+
+    to_alter.qtd_estoque = qtd_estoque;
+
+    const feito_em_Mari = await inquirer
+      .prompt([
+        {
+          name: "decision",
+          message: "Deseja alterar se o produto foi feito em Mari?",
+          type: "confirm",
+        },
+      ])
+      .then((answers) => {
+        const to_negate = answers.decision;
+
+        const original = resp["0"].feito_em_Mari;
+
+        // nega o original (se foi indicado) e converte pra inteiro com ~~
+        return ~~(to_negate ? !original : original);
+      });
+
+    to_alter.feito_em_Mari = feito_em_Mari;
+
+    try {
+      await Produtos.alter(Object.assign({ cod_produto }, to_alter));
+    } catch (e) {
+      console.error("[Erro] Alterar", e);
+    }
+
+    const altered = await Produtos.get(cod_produto);
+
+    console.table(altered);
+  }
+
   async ask() {
     const choice = await inquirer
       .prompt([
@@ -375,7 +804,6 @@ class Crud {
           message:
             "Olá! Bem-vindo(a)! Por favor, selecione uma das funções abaixo para continuar:",
           choices: [
-            { name: "Sair", value: this.constants.DISCONNECT },
             { name: "Nossos Produtos", value: this.constants.LIST_ALL },
             {
               name: "Fazer login",
@@ -385,6 +813,7 @@ class Crud {
               name: "Sou funcionário, Acesso Admin",
               value: this.constants.ADMIN,
             },
+            { name: "Sair", value: this.constants.DISCONNECT },
           ],
           loop: false,
         },
@@ -421,7 +850,7 @@ class Crud {
         await this.login();
         break;
       case this.constants.ADMIN:
-        await this.admin();
+        while (await this.admin());
         break;
     }
 
@@ -444,15 +873,7 @@ crud.start();
 // case this.constants.SEARCH_NAME:
 //   await this.search_product_name();
 //   break;
-// case this.constants.INSERT:
-//   await this.insert_product();
-//   break;
-// case this.constants.DELETE:
-//   await this.delete_product();
-//   break;
-// case this.constants.ALTER:
-//   await this.alter_product();
-//   break;
+
 // case this.constants.SHOW_ONE:
 //   await this.show_product();
 //   break;
@@ -750,273 +1171,5 @@ crud.start();
 //     else console.table(resultado);
 //   } catch (e) {
 //     console.error("[Erro] Pesquisar", e);
-//   }
-// }
-
-// async insert_product() {
-//   const nome_produto = await inquirer
-//     .prompt({
-//       name: "nome_produto",
-//       message: "Digite o nome do seu produto:",
-//       type: "input",
-//       validate: (nome_produto) => {
-//         return Produtos.validate({ nome_produto });
-//       },
-//     })
-//     .then((answer) => answer.nome_produto);
-
-//   const cod_produto = await inquirer
-//     .prompt({
-//       name: "cod_produto",
-//       message: "Digite o codigo do seu produto:",
-//       type: "number",
-//       validate: (cod_produto) =>
-//         new Promise(async (res) => {
-//           const status_cod = Produtos.validate({ cod_produto });
-
-//           if (status_cod !== true) return res(status_cod);
-
-//           const resp = await Produtos.get(cod_produto);
-
-//           if (resp.length)
-//             return res("Esse codigo de produto ja esta sendo usado");
-
-//           return res(true);
-//         }),
-//     })
-//     .then((answer) => answer.cod_produto);
-
-//   const categoria = await inquirer
-//     .prompt({
-//       name: "categoria",
-//       message: "Digite a categoria do seu produto:",
-//       type: "list",
-//       choices: this.categorias,
-//       loop: false,
-//     })
-//     .then((answer) => answer.categoria);
-
-//   const preco = await inquirer
-//     .prompt({
-//       name: "preco",
-//       message: "Digite o preço do seu produto:",
-//       type: "number",
-//       validate: (preco) => {
-//         return Produtos.validate({ preco });
-//       },
-//     })
-//     .then((answer) => answer.preco);
-
-//   const qtd_estoque = await inquirer
-//     .prompt({
-//       name: "qtd_estoque",
-//       message: "Digite a quantitade presente no estoque:",
-//       type: "number",
-//       validate: (qtd_estoque) => {
-//         return Produtos.validate({ qtd_estoque });
-//       },
-//     })
-//     .then((answer) => answer.qtd_estoque);
-
-//   const feito_em_Mari = await inquirer
-//     .prompt({
-//       name: "feito_em_Mari",
-//       message: "Foi feito em Mari?",
-//       type: "confirm",
-//     })
-//     // convert bool to int
-//     .then((answer) => ~~answer.feito_em_Mari);
-
-//   let to_insert = {
-//     nome_produto,
-//     cod_produto,
-//     categoria,
-//     preco,
-//     qtd_estoque,
-//     feito_em_Mari,
-//   };
-
-//   try {
-//     await Produtos.insert(to_insert);
-
-//     console.table([to_insert]);
-
-//     console.log("inserido.");
-//   } catch (e) {
-//     console.error("[Erro] Inserir", e);
-//   }
-// }
-
-// async delete_product() {
-//   const codigo_produto = await inquirer
-//     .prompt({
-//       name: "codigo_produto",
-//       message: "Digite o código do produto a ser removido:",
-//       type: "number",
-//       validate: (codigo_produto) => {
-//         return Produtos.validate({ codigo_produto });
-//       },
-//     })
-//     .then((answer) => answer.codigo_produto);
-
-//   try {
-//     const result = await Produtos.remove(codigo_produto);
-
-//     if (result.affectedRows === 1) console.log("Produto removido.");
-//     else console.log("Produto nao encontrado.");
-//   } catch (e) {
-//     console.error("[Erro] Remover", e);
-//   }
-// }
-
-// async alter_product() {
-//   const cod_produto = await inquirer
-//     .prompt({
-//       name: "cod_produto",
-//       message: "Digite o codigo do produto que você quer alterar:",
-//       type: "number",
-//       validate: (cod_produto) =>
-//         new Promise(async (res) => {
-//           const status = Produtos.validate({ cod_produto });
-
-//           if (status !== true) return res(status);
-
-//           const resp = await Produtos.get(cod_produto);
-
-//           if (!resp.length)
-//             return res("Nao ha nenhum produto com esse codigo.");
-
-//           return res(true);
-//         }),
-//     })
-//     .then((answer) => answer.cod_produto);
-
-//   const resp = await Produtos.get(cod_produto);
-//   console.table(resp);
-
-//   const to_alter = {};
-
-//   const nome_produto = await inquirer
-//     .prompt([
-//       {
-//         name: "decision",
-//         message: "Deseja alterar o nome do produto?",
-//         type: "confirm",
-//       },
-//       {
-//         name: "nome_produto",
-//         message: "Insira o novo nome do produto:",
-//         type: "input",
-//         when: (a) => {
-//           return a.decision;
-//         },
-//         validate: (nome_produto) => {
-//           return Produtos.validate({ nome_produto });
-//         },
-//       },
-//     ])
-//     .then((answers) => answers.nome_produto);
-
-//   to_alter.nome_produto = nome_produto;
-
-//   const categoria = await inquirer
-//     .prompt([
-//       {
-//         name: "decision",
-//         message: "Deseja alterar a categoria do produto?",
-//         type: "confirm",
-//       },
-//       {
-//         name: "categoria",
-//         message: "Escolha a nova categoria do produto:",
-//         type: "list",
-//         choices: this.categorias,
-//         when: (a) => a.decision,
-//         loop: false,
-//       },
-//     ])
-//     .then((answers) => answers.categoria);
-
-//   to_alter.categoria = categoria;
-
-//   const preco = await inquirer
-//     .prompt([
-//       {
-//         name: "decision",
-//         message: "Deseja alterar o preco do produto?",
-//         type: "confirm",
-//       },
-//       {
-//         name: "preco",
-//         message: "Insira o novo preco do produto:",
-//         type: "number",
-//         when: (a) => a.decision,
-//         validate: (preco) => {
-//           return Produtos.validate({ preco });
-//         },
-//       },
-//     ])
-//     .then((answers) => answers.preco);
-
-//   to_alter.preco = preco;
-
-//   const qtd_estoque = await inquirer
-//     .prompt([
-//       {
-//         name: "decision",
-//         message: "Deseja alterar a quantidade em estoque?",
-//         type: "confirm",
-//       },
-//       {
-//         name: "qtd_estoque",
-//         message: "Insira a nova quantidade em estoque:",
-//         type: "number",
-//         when: (a) => a.decision,
-//         validate: (qtd_estoque) => {
-//           return Produtos.validate({ qtd_estoque });
-//         },
-//       },
-//     ])
-//     .then((answers) => answers.qtd_estoque);
-
-//   to_alter.qtd_estoque = qtd_estoque;
-
-//   const feito_em_Mari = await inquirer
-//     .prompt([
-//       {
-//         name: "decision",
-//         message: "Deseja alterar se o produto foi feito em Mari?",
-//         type: "confirm",
-//       },
-//     ])
-//     .then((answers) => {
-//       const to_negate = answers.decision;
-
-//       const original = resp["0"].feito_em_Mari;
-
-//       // nega o original (se foi indicado) e converte pra inteiro com ~~
-//       return ~~(to_negate ? !original : original);
-//     });
-
-//   to_alter.feito_em_Mari = feito_em_Mari;
-
-//   try {
-//     await Produtos.alter(Object.assign({ cod_produto }, to_alter));
-//   } catch (e) {
-//     console.error("[Erro] Alterar", e);
-//   }
-
-//   const altered = await Produtos.get(cod_produto);
-
-//   console.table(altered);
-// }
-
-// async show_product() {
-//   try {
-//     const resp = await Produtos.showOne();
-
-//     console.table(resp);
-//   } catch (e) {
-//     console.error("[Erro] Exibir produto", e);
 //   }
 // }

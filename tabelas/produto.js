@@ -263,4 +263,12 @@ export default class Produtos {
       WHERE feito_em_Mari = 1`,
     });
   }
+
+  static LessThanFive() {
+    return connection.query({
+      sql: `SELECT nome_produto, qtd_estoque
+          FROM Produtos
+          WHERE qtd_estoque < 5`,
+    });
+  }
 }

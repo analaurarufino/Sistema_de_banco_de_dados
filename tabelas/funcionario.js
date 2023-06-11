@@ -20,11 +20,9 @@ export default class Funcionarios {
   static search(cpf) {
     const escaped_cpf = connection.escape(cpf);
 
-    return connection
-      .query({
-        sql: `SELECT * FROM Funcionarios WHERE cpf = ${escaped_cpf}`,
-      })
-      .then(console.log);
+    return connection.query({
+      sql: `SELECT * FROM Funcionarios WHERE cpf = ${escaped_cpf}`,
+    });
   }
 
   static searchByID(id) {

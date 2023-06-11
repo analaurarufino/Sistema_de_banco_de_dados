@@ -207,4 +207,13 @@ export default class Clientes {
       WHERE feito_em_Mari = 1`,
     });
   }
+
+  static ClientesFlamenguistas() {
+    return connection.query({
+      sql: `SELECT nome_cliente, is_flamengo
+          FROM Clientes
+          WHERE is_flamengo = true;
+        `,
+    });
+  }
 }
