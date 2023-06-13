@@ -151,4 +151,10 @@ export default class Vendas {
       (${escaped_date}, ${escaped_value}, ${escaped_payment}, ${escaped_status}, ${cliente_id}, ${funcionario_id})`,
     });
   }
+
+  static salesByClient(cliente_id) {
+    return connection.query({
+      sql: `SELECT * FROM Vendas WHERE cliente_id = ${cliente_id};`,
+    });
+  }
 }

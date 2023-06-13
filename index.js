@@ -1,6 +1,6 @@
 import "dotenv/config";
 import inquirer from "inquirer";
-import { sha256 } from 'js-sha256';
+import { sha256 } from "js-sha256";
 
 import {
   connection,
@@ -54,8 +54,12 @@ class Crud {
         value: 1,
       },
       {
-        name: "Sair",
+        name: "Top 5 Produtos mais vendidos",
         value: 2,
+      },
+      {
+        name: "Sair",
+        value: 3,
       },
     ];
 
@@ -91,6 +95,12 @@ class Crud {
       { name: "Sair", value: "sair" },
     ];
 
+    // this.login = [
+    //   { name: "Nossos produtos", value: "add" },
+    //   { name: "Ver carrinho", value: "card" },
+    //   { name: "Sair", value: "sair" },
+    // ];
+
     this.finish = [
       { name: "Adicionar mais produtos", value: "add" },
       { name: "Finalizar compra", value: "finish" },
@@ -114,6 +124,88 @@ class Crud {
       LOGIN: 2,
       ADMIN: 3,
     };
+
+    this.clientSalesList = [
+      { name: "Ver informações", value: 0 },
+      { name: "Ver compras", value: 1 },
+      { name: "Nossos produtos", value: 2 },
+      { name: "Sair", value: 3 },
+    ];
+  }
+
+  async clientSales() {
+    const res = await inquirer
+      .prompt({
+        name: "res",
+        message: "Selecione um opção:",
+        type: "list",
+        choices: this.clientSalesList,
+        loop: true,
+      })
+      .then((answer) => answer.res);
+
+    switch (res) {
+      case 0: {
+        try {
+          const cli = await Clientes.getById(this.client);
+          console.table(cli);
+        } catch (e) {
+          console.error("[Erro] Exibir Cliente", e);
+        }
+        return 1;
+      }
+      case 1: {
+        const allSale = await Vendas.salesByClient(this.client);
+
+        const data = allSale.map((item, index) => ({
+          value: Object.values(item)[0],
+          name: `Venda ${index + 1} -- Data: ${Object.values(item)[1]}`,
+        }));
+        if (data.length === 0) {
+          console.log("Você não possui vendas cadastradas");
+          return 1;
+        }
+        const venda_id = await inquirer
+          .prompt({
+            name: "venda_id",
+            message: "Selecione um caixa",
+            type: "list",
+            choices: data,
+            loop: true,
+          })
+          .then((answer) => answer.venda_id);
+
+        const sale = allSale.find((item) => item.venda_id === venda_id);
+        const saleData = Object.values(sale);
+
+        const produtos = await ProdutoVendas.searchProducts(venda_id);
+
+        console.log("Produtos da venda: ");
+        console.table(produtos);
+
+        const funcionario = await Funcionarios.searchByID(saleData[6]);
+
+        const funcionario_name = Object.values(funcionario[0]);
+
+        console.log(
+          "\n Data:",
+          saleData[1],
+          "\n",
+          "Valor total:",
+          formatCurrencyInput(saleData[2]),
+          "\n",
+          "Funcionário:",
+          funcionario_name[1],
+          "\n\n"
+        );
+        return 1;
+      }
+      case 2:
+        while (await this.list_all_products());
+        return 1;
+      case 3:
+        return 0;
+    }
   }
 
   async connect() {
@@ -134,19 +226,33 @@ class Crud {
         loop: true,
       })
       .then((answer) => answer.res);
-    if (res == 0) {
-      try {
-        const resp = await Produtos.productMadeInMari();
-        console.table(resp);
-      } catch (e) {
-        console.error("[Erro] Exibir Produtos", e);
+    switch (res) {
+      case 0: {
+        try {
+          const resp = await Produtos.productMadeInMari();
+          console.table(resp);
+        } catch (e) {
+          console.error("[Erro] Exibir Produtos", e);
+        }
+        break;
       }
-    } else {
-      try {
-        const resp = await Clientes.ClientesFlamenguistas();
-        console.table(resp);
-      } catch (e) {
-        console.error("[Erro] Exibir Clientes", e);
+      case 1: {
+        try {
+          const resp = await Clientes.ClientesFlamenguistas();
+          console.table(resp);
+        } catch (e) {
+          console.error("[Erro] Exibir Clientes", e);
+        }
+        break;
+      }
+      case 2: {
+        try {
+          const resp = await Produtos.bestSellers();
+          console.table(resp);
+        } catch (e) {
+          console.error("[Erro] Exibir Clientes", e);
+        }
+        break;
       }
     }
   }
@@ -211,6 +317,49 @@ class Crud {
         return 0;
     }
     return 1;
+  }
+
+  async login() {
+    const nome = await inquirer
+      .prompt({
+        name: "nome",
+        message: "Digite o seu nome: ",
+        type: "input",
+        validate: (nome) =>
+          new Promise(async (res) => {
+            const status_nome = Clientes.validate({ nome_cliente: nome });
+            if (status_nome !== true) return res(status_nome);
+
+            const resp = await Clientes.search(nome);
+
+            if (!resp.length) return res("Não existe cliente com esse nome");
+
+            return res(true);
+          }),
+      })
+      .then((answer) => answer.nome);
+
+    const [resp] = await Clientes.search(nome);
+    const client_id = resp.id;
+    const client_senha = resp.senha;
+
+    const senha = await inquirer
+      .prompt({
+        name: "senha",
+        message: "digite sua senha:",
+        type: "password",
+      })
+      .then((answer) => answer.senha);
+
+    const hash = sha256(senha);
+
+    if (hash === client_senha) {
+      this.client = client_id;
+      this.is_authenticated = true;
+    } else {
+      console.log("Senha errada! Tente novamente.");
+    }
+    while (await this.clientSales());
   }
 
   async list_all_products() {
@@ -557,9 +706,9 @@ class Crud {
           if (status_cod !== true) return status_cod;
 
           return true;
-        }
+        },
       })
-      .then((answer) => sha256(answer.senha))
+      .then((answer) => sha256(answer.senha));
 
     let to_insert = {
       nome_cliente,

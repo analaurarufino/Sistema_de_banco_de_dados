@@ -62,7 +62,7 @@ const validate_senha = (senha) => {
   if (senha.length > 255) return "senha nao pode exceder 255 caracteres";
 
   return true;
-}
+};
 
 export default class Clientes {
   static createTable() {
@@ -82,7 +82,13 @@ export default class Clientes {
       .then(() => console.log(`table 'Clientes' created.`));
   }
 
-  static validate({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha }) {
+  static validate({
+    nome_cliente,
+    fan_de_onepiece,
+    de_souza,
+    is_flamengo,
+    senha,
+  }) {
     const status_nome = validate_nome(nome_cliente);
     if (status_nome !== true) return status_nome;
 
@@ -118,9 +124,8 @@ export default class Clientes {
 
   static getById(id) {
     const escaped_id = connection.escape(id);
-
     return connection.query({
-      sql: `SELECT * FROM Clientes WHERE id = ${escaped_id} LIMIT 1`,
+      sql: `SELECT nome_cliente, fan_de_onepiece, de_souza, is_flamengo  FROM Clientes WHERE id = ${escaped_id} LIMIT 1;`,
     });
   }
 
@@ -136,7 +141,13 @@ export default class Clientes {
     });
   }
 
-  static insert({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha }) {
+  static insert({
+    nome_cliente,
+    fan_de_onepiece,
+    de_souza,
+    is_flamengo,
+    senha,
+  }) {
     const status = Clientes.validate({
       nome_cliente,
       fan_de_onepiece,
@@ -158,7 +169,10 @@ export default class Clientes {
     });
   }
 
-  static alter({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha }, id) {
+  static alter(
+    { nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha },
+    id
+  ) {
     const status = Clientes.validate({
       nome_cliente,
       fan_de_onepiece,

@@ -18,11 +18,20 @@ export default class ProdutoVendas {
   static search(cod_venda) {
     const escaped_cod = connection.escape(cod_venda);
 
-    return connection
-      .query({
-        sql: `SELECT * FROM ProdutoVendas WHERE cod_venda = ${escaped_cod}`,
-      })
-      .then(console.log);
+    return connection.query({
+      sql: `SELECT * FROM ProdutoVendas WHERE cod_venda = ${escaped_cod}`,
+    });
+  }
+
+  static searchProducts(venda_id) {
+    const escaped_cod = connection.escape(venda_id);
+
+    return connection.query({
+      sql: `SELECT P.nome_produto, PV.quantidade
+FROM ProdutoVendas PV
+JOIN Produtos P ON PV.cod_produto = P.cod_produto
+WHERE PV.venda_id = ${escaped_cod};`,
+    });
   }
 
   static listAll() {

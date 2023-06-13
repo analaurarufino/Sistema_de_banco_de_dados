@@ -14,7 +14,7 @@ const validate_nome = (nome) => {
   if (nome.length > 255) return "nome nao pode exceder 255 caracteres";
 
   return true;
-}
+};
 
 const validate_data = (data_nasc) => {
   if (data_nasc === undefined) return true;
@@ -25,10 +25,11 @@ const validate_data = (data_nasc) => {
 
   if (data_nasc.length === 0) return "data_nasc não pode ser uma string vazia";
 
-  if (data_nasc.length > 255) return "data_nasc nao pode exceder 255 caracteres";
+  if (data_nasc.length > 255)
+    return "data_nasc nao pode exceder 255 caracteres";
 
   return true;
-}
+};
 
 const validate_cpf = (cpf) => {
   if (cpf === undefined) return true;
@@ -42,7 +43,7 @@ const validate_cpf = (cpf) => {
   if (cpf.length > 255) return "cpf nao pode exceder 255 caracteres";
 
   return true;
-}
+};
 
 const validate_cargo = (cargo) => {
   if (cargo === undefined) return true;
@@ -56,7 +57,7 @@ const validate_cargo = (cargo) => {
   if (cargo.length > 255) return "cargo nao pode exceder 255 caracteres";
 
   return true;
-}
+};
 
 const validate_senha = (senha) => {
   if (senha === undefined) return true;
@@ -70,7 +71,7 @@ const validate_senha = (senha) => {
   if (senha.length > 255) return "senha nao pode exceder 255 caracteres";
 
   return true;
-}
+};
 
 const validate_tempo_trab = (tempo_trab) => {
   if (tempo_trab === undefined) return true;
@@ -82,7 +83,7 @@ const validate_tempo_trab = (tempo_trab) => {
   if (tempo_trab <= 0) return "tempo_trab nao pode ser menor ou igual a zero";
 
   return true;
-}
+};
 
 export default class Funcionarios {
   static createTable() {
@@ -113,11 +114,9 @@ export default class Funcionarios {
   static searchByID(id) {
     const escaped_id = connection.escape(id);
 
-    return connection
-      .query({
-        sql: `SELECT * FROM Funcionarios WHERE funcionario_id = ${escaped_id}`,
-      })
-      .then(console.log);
+    return connection.query({
+      sql: `SELECT * FROM Funcionarios WHERE funcionario_id = ${escaped_id}`,
+    });
   }
 
   static listAll() {

@@ -271,4 +271,15 @@ export default class Produtos {
           WHERE qtd_estoque < 5`,
     });
   }
+
+  static bestSellers() {
+    return connection.query({
+      sql: `SELECT p.nome_produto, pv.cod_produto, SUM(pv.quantidade) AS quantidade_total
+FROM ProdutoVendas pv
+JOIN Produtos p ON pv.cod_produto = p.cod_produto
+GROUP BY pv.cod_produto, p.nome_produto
+ORDER BY quantidade_total DESC LIMIT 5;
+`,
+    });
+  }
 }
