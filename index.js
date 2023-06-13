@@ -204,6 +204,9 @@ class Crud {
         while (await this.list_all_products());
         return 1;
       case 3:
+        this.carrinho = [];
+        this.is_authenticated = false;
+        this.client = false;
         return 0;
     }
   }
@@ -299,7 +302,7 @@ class Crud {
       const hash = sha256(senha);
 
       if (funcionario_senha !== hash) {
-        return console.log("Senha incorreta.")
+        return console.log("Senha incorreta.");
       }
     }
 
@@ -566,23 +569,26 @@ class Crud {
                   name: "nome",
                   message: "Digite o seu nome:",
                   type: "input",
-                  validate: (nome) => new Promise(async (res) => {
-                    const status_nome = Clientes.validate({ nome_cliente: nome });
-                    if (status_nome !== true) return res(status_nome);
+                  validate: (nome) =>
+                    new Promise(async (res) => {
+                      const status_nome = Clientes.validate({
+                        nome_cliente: nome,
+                      });
+                      if (status_nome !== true) return res(status_nome);
 
-                    const resp = await Clientes.search(nome);
+                      const resp = await Clientes.search(nome);
 
-                    if (!resp.length)
-                      return res("Não existe cliente com esse nome");
+                      if (!resp.length)
+                        return res("Não existe cliente com esse nome");
 
-                    return res(true);
-                  })
+                      return res(true);
+                    }),
                 })
                 .then((answer) => answer.nome);
 
               const [resp] = await Clientes.search(nome);
               const client_id = resp.id;
-              const client_senha = resp.senha
+              const client_senha = resp.senha;
 
               const senha = await inquirer
                 .prompt({
@@ -598,7 +604,7 @@ class Crud {
                 this.client = client_id;
                 this.is_authenticated = true;
               } else {
-                console.log("Senha errada! Tente novamente.")
+                console.log("Senha errada! Tente novamente.");
               }
 
               break;
