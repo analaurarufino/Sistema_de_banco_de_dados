@@ -267,8 +267,8 @@ class Crud {
   }
 
   async admin() {
-    if (!this.is_authenticated)
-      await inquirer
+    if (!this.is_authenticated) {
+      const cpf = await inquirer
         .prompt({
           name: "cpf",
           message: "Digite o seu cpf:",
@@ -283,6 +283,26 @@ class Crud {
             }),
         })
         .then((answer) => answer.cpf);
+
+      const [resp] = await Funcionarios.search(cpf);
+
+      const funcionario_senha = resp.senha;
+
+      const senha = await inquirer
+        .prompt({
+          name: "senha",
+          message: "Digite sua senha:",
+          type: "password",
+        })
+        .then((a) => a.senha);
+
+      const hash = sha256(senha);
+
+      if (funcionario_senha !== hash) {
+        return console.log("Senha incorreta.")
+      }
+    }
+
     this.is_authenticated = true;
 
     const res = await inquirer
@@ -541,16 +561,46 @@ class Crud {
             .then((answer) => answer.res);
           switch (res) {
             case 0: {
-              const id = await inquirer
+              const nome = await inquirer
                 .prompt({
-                  name: "id",
-                  message: "Digite o id:",
+                  name: "nome",
+                  message: "Digite o seu nome:",
                   type: "input",
+                  validate: (nome) => new Promise(async (res) => {
+                    const status_nome = Clientes.validate({ nome_cliente: nome });
+                    if (status_nome !== true) return res(status_nome);
+
+                    const resp = await Clientes.search(nome);
+
+                    if (!resp.length)
+                      return res("Não existe cliente com esse nome");
+
+                    return res(true);
+                  })
                 })
-                .then((answer) => answer.id);
-              const data = await this.get_client_by_id(id);
-              this.client = Object.values(data[0])[0];
-              this.is_authenticated = true;
+                .then((answer) => answer.nome);
+
+              const [resp] = await Clientes.search(nome);
+              const client_id = resp.id;
+              const client_senha = resp.senha
+
+              const senha = await inquirer
+                .prompt({
+                  name: "senha",
+                  message: "digite sua senha:",
+                  type: "password",
+                })
+                .then((answer) => answer.senha);
+
+              const hash = sha256(senha);
+
+              if (hash === client_senha) {
+                this.client = client_id;
+                this.is_authenticated = true;
+              } else {
+                console.log("Senha errada! Tente novamente.")
+              }
+
               break;
             }
             case 1: {
@@ -1057,6 +1107,7 @@ class Crud {
         await this.login();
         break;
       case this.constants.ADMIN:
+        this.is_authenticated = false;
         while (await this.admin());
         this.is_authenticated = false; // admin logged off
         break;

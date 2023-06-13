@@ -256,11 +256,18 @@ export default class Produtos {
     });
   }
 
+  static createMariView() {
+    return connection.query({
+      sql: `CREATE VIEW made_in_mari
+      AS SELECT *
+      FROM Produtos
+      WHERE feito_em_mari = 1`
+    })
+  }
+
   static productMadeInMari() {
     return connection.query({
-      sql: `SELECT *
-      FROM Produtos
-      WHERE feito_em_Mari = 1`,
+      sql: `SELECT * FROM made_in_mari`,
     });
   }
 
