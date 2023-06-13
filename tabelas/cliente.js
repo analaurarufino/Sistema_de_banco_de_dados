@@ -1,4 +1,3 @@
-import { escape } from "mysql";
 import connection from "./connection.js";
 
 const isString = (s) => typeof s === "string" || s instanceof String;
@@ -51,6 +50,20 @@ const validate_is_flamengo = (is_flamengo) => {
   return true;
 };
 
+const validate_senha = (senha) => {
+  if (senha === undefined) return true;
+
+  if (senha === null) return "senha não pode ser NULL";
+
+  if (!isString(senha)) return "senha precisa ser uma string";
+
+  if (senha.length === 0) return "senha não pode ser uma string vazia";
+
+  if (senha.length > 255) return "senha nao pode exceder 255 caracteres";
+
+  return true;
+}
+
 export default class Clientes {
   static createTable() {
     return connection
@@ -62,13 +75,14 @@ export default class Clientes {
           UNIQUE KEY (nome_cliente),
           fan_de_onepiece BOOL NOT NULL DEFAULT 0,
           de_souza BOOL NOT NULL DEFAULT 0,
-          is_flamengo BOOL NOT NULL DEFAULT 0
+          is_flamengo BOOL NOT NULL DEFAULT 0,
+          senha VARCHAR(255) NOT NULL
         );`,
       })
       .then(() => console.log(`table 'Clientes' created.`));
   }
 
-  static validate({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo }) {
+  static validate({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha }) {
     const status_nome = validate_nome(nome_cliente);
     if (status_nome !== true) return status_nome;
 
@@ -81,6 +95,10 @@ export default class Clientes {
     const status_flamengo = validate_is_flamengo(is_flamengo);
     if (status_flamengo !== true) return status_flamengo;
 
+    const status_senha = validate_senha(senha);
+    if (status_senha !== true) return status_senha;
+
+    // que?
     const findClient = this.search(nome_cliente);
     if (findClient.length > 0) {
       console.log("Cliente existente");
@@ -118,32 +136,35 @@ export default class Clientes {
     });
   }
 
-  static insert({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo }) {
+  static insert({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha }) {
     const status = Clientes.validate({
       nome_cliente,
       fan_de_onepiece,
       de_souza,
       is_flamengo,
+      senha,
     });
 
     if (status !== true) throw new Error(status);
 
     const escaped_nome = connection.escape(nome_cliente);
+    const escaped_senha = connection.escape(senha);
 
     return connection.query({
       sql: `INSERT INTO Clientes
-      (nome_cliente, fan_de_onepiece, de_souza, is_flamengo)
+      (nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha)
       VALUES
-      (${escaped_nome}, ${fan_de_onepiece}, ${de_souza}, ${is_flamengo})`,
+      (${escaped_nome}, ${fan_de_onepiece}, ${de_souza}, ${is_flamengo}, ${escaped_senha})`,
     });
   }
 
-  static alter({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo }, id) {
+  static alter({ nome_cliente, fan_de_onepiece, de_souza, is_flamengo, senha }, id) {
     const status = Clientes.validate({
       nome_cliente,
       fan_de_onepiece,
       de_souza,
       is_flamengo,
+      senha,
     });
 
     if (status !== true) throw new Error(status);
@@ -157,6 +178,7 @@ export default class Clientes {
         fan_de_onepiece,
         de_souza,
         is_flamengo,
+        senha: connection.escape(senha),
       }
     );
 
