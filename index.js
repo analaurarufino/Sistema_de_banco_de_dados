@@ -1,5 +1,6 @@
 import "dotenv/config";
 import inquirer from "inquirer";
+import { sha256 } from 'js-sha256';
 
 import {
   connection,
@@ -545,11 +546,27 @@ class Crud {
       // convert bool to int
       .then((answer) => ~~answer.is_flamengo);
 
+    const senha = await inquirer
+      .prompt({
+        name: "senha",
+        message: "Digite a sua senha:",
+        type: "password",
+        validate: (senha) => {
+          const status_cod = Clientes.validate({ senha });
+
+          if (status_cod !== true) return status_cod;
+
+          return true;
+        }
+      })
+      .then((answer) => sha256(answer.senha))
+
     let to_insert = {
       nome_cliente,
       fan_de_onepiece,
       de_souza,
       is_flamengo,
+      senha,
     };
 
     try {
@@ -892,6 +909,7 @@ class Crud {
         break;
       case this.constants.ADMIN:
         while (await this.admin());
+        this.is_authenticated = false; // admin logged off
         break;
     }
 
