@@ -244,8 +244,8 @@ class Crud {
       }
       case 2: {
         try {
-          const resp = await Produtos.bestSellers();
-          console.table(resp);
+          const [resp] = await Produtos.bestSellers();
+          console.table(resp)
         } catch (e) {
           console.error("[Erro] Exibir Clientes", e);
         }
@@ -1118,6 +1118,8 @@ class Crud {
 
   async start() {
     await this.connect();
+
+    // Produtos.createBestSellersProcedure()
 
     while (await this.ask()) {}
 
