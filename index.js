@@ -19,6 +19,8 @@ class Crud {
 
     this.is_authenticated = false;
 
+    this.bought = false;
+
     this.client = false;
 
     this.menuAdmin = {
@@ -263,7 +265,20 @@ class Crud {
 
                   const produto = await Produtos.get(prod_cod);
                   const qtd = Object.values(produto[0])[5];
-                  console.log();
+
+                  const prodExistCard = this.carrinho.find(
+                    (item) => item.cod_produto === prod_cod
+                  );
+                  if (prodExistCard) {
+                    const indexProd = this.carrinho.findIndex(
+                      (item) => item == prodExistCard
+                    );
+                    if (qtd_estoque + this.carrinho[indexProd].quantidade > qtd)
+                      return res(
+                        "Quantia presente no carrinho e a digitada excede a quantidade no estoque"
+                      );
+                  }
+
                   if (qtd_estoque > qtd)
                     return res("Quantia excede a quantidade no estoque");
 
@@ -275,13 +290,30 @@ class Crud {
           const resp = await Produtos.get(prod_cod);
           const dados = Object.values(resp[0]);
 
-          this.carrinho.push({
-            cod_produto: dados[1],
-            produto: dados[2],
-            quantidade,
-            valor: dados[3],
-            qtd_estoque: dados[5],
-          });
+          const prodExistCard = this.carrinho.find(
+            (item) => item.cod_produto === dados[1]
+          );
+
+          if (prodExistCard) {
+            const indexCard = this.carrinho.findIndex(
+              (item) => item == prodExistCard
+            );
+            this.carrinho[indexCard] = {
+              cod_produto: dados[1],
+              produto: dados[2],
+              quantidade: quantidade + this.carrinho[indexCard].quantidade,
+              valor: dados[3],
+              qtd_estoque: dados[5],
+            };
+          } else {
+            this.carrinho.push({
+              cod_produto: dados[1],
+              produto: dados[2],
+              quantidade,
+              valor: dados[3],
+              qtd_estoque: dados[5],
+            });
+          }
 
           console.log("Produto adicionado ao carrinho com sucesso\n");
           return 1;
@@ -450,6 +482,7 @@ class Crud {
         }
 
         console.log("Compra realizada com sucesso!");
+        this.bought = true;
 
         return 0;
       }
@@ -826,22 +859,30 @@ class Crud {
       case this.constants.LIST_ALL:
         while (true) {
           while (await this.list_all_products());
-          const res = await inquirer
-            .prompt({
-              name: "res",
-              message: "Selecione um opção:",
-              type: "list",
-              choices: this.leaveServer,
-              loop: true,
-            })
-            .then((answer) => answer.res);
-          if (res == 0) {
+          if (this.bought) {
+            const res = await inquirer
+              .prompt({
+                name: "res",
+                message: "Selecione um opção:",
+                type: "list",
+                choices: this.leaveServer,
+                loop: true,
+              })
+              .then((answer) => answer.res);
+            if (res == 0) {
+              this.is_authenticated = false;
+              this.carrinho = [];
+              this.client = null;
+              break;
+            } else {
+              this.carrinho = [];
+            }
+          } else {
             this.is_authenticated = false;
             this.carrinho = [];
             this.client = null;
+            this.bought = false;
             break;
-          } else {
-            this.carrinho = [];
           }
         }
 
